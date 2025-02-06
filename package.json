@@ -5,9 +5,9 @@
     "author": "",
     "license": "ISC",
     "bugs": {
-        "url": "https://github.com/doolse/react-typed-forms/issues"
+        "url": "https://github.com/astrolabe-apps/swc-controls-plugin"
     },
-    "homepage": "https://github.com/doolse/react-typed-forms#readme",
+    "homepage": "https://github.com/astrolabe-apps/swc-controls-plugin#readme",
     "publishConfig": {
         "access": "public"
     },
