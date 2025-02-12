@@ -12,9 +12,9 @@ crate-type = ["cdylib", "rlib"]
 [profile.release]
 # This removes more dead code
 codegen-units = 1
-lto = true
+lto = "fat"
 # Optimize for size
-opt-level = "s"
+opt-level = 3
 # Optimize for performance, this is default so you don't need to specify it
 # opt-level = "z"
 
