@@ -183,6 +183,10 @@ impl<C> SignalsTransformVisitor<C>
 where
     C: Comments + Debug,
 {
+    fn is_top_level_component(&self) -> bool {
+        self.depth == 1
+    }
+
     fn get_import_use_signals(&mut self) -> Ident {
         self.import_use_signals
             .get_or_insert(private_ident!("_useComponentTracking"))
@@ -370,7 +374,7 @@ where
     where
         TWrappable: SignalWrappable,
     {
-        if self.depth == 1 {
+        if self.is_top_level_component() {
             wrappable.wrap_with_use_signals(
                 self.get_import_use_signals(),
                 match self.add_context_to_hooks {
@@ -388,17 +392,23 @@ where
     noop_visit_mut_type!();
 
     fn visit_mut_var_decl(&mut self, n: &mut VarDecl) {
-        let should_process = self
-            .ignore_span
-            .map(|span| !span.eq(&n.span))
-            .unwrap_or(true);
+        self.depth += 1;
 
-        if should_process {
-            self.process_var_decl::<SignalsTransformVisitor<C>>(n, None)
+        if self.is_top_level_component() {
+            let should_process = self
+                .ignore_span
+                .map(|span| !span.eq(&n.span))
+                .unwrap_or(true);
+
+            if should_process {
+                self.process_var_decl::<SignalsTransformVisitor<C>>(n, None)
+            }
+
+            n.visit_mut_children_with(self);
         }
-
-        n.visit_mut_children_with(self);
+        self.depth -= 1;
     }
+    
     fn visit_mut_export_decl(&mut self, n: &mut ExportDecl) {
         match n {
             ExportDecl {
@@ -406,38 +416,50 @@ where
                 decl: Decl::Var(ref mut var_decl),
             } => {
                 self.depth += 1;
-                self.process_var_decl::<SignalsTransformVisitor<C>>(
-                    var_decl.deref_mut(),
-                    Some(&[&span]),
-                );
-                let old_span = self.ignore_span;
-                self.ignore_span = Some(var_decl.span.clone());
-                n.visit_mut_children_with(self);
+
+                if self.is_top_level_component() {
+                    self.process_var_decl::<SignalsTransformVisitor<C>>(
+                        var_decl.deref_mut(),
+                        Some(&[&span]),
+                    );
+                    let old_span = self.ignore_span;
+                    self.ignore_span = Some(var_decl.span.clone());
+                    n.visit_mut_children_with(self);
+                    self.ignore_span = old_span
+                }
+
                 self.depth -= 1;
-                self.ignore_span = old_span
             }
             ExportDecl {
                 span,
                 decl: Decl::Fn(ref mut fn_declr),
             } => {
                 self.depth += 1;
-                self.should_track_option_ident(
-                    &[&span, &fn_declr.function.span],
-                    Some(&fn_declr.ident),
-                    fn_declr,
-                    false,
-                )
-                .inspect(|trackable| self.track(trackable.clone(), &mut *fn_declr.function));
 
-                let old_span = self.ignore_span;
-                self.ignore_span = Some(fn_declr.function.span.clone());
-                n.visit_mut_children_with(self);
+                if self.is_top_level_component() {
+                    self.should_track_option_ident(
+                        &[&span, &fn_declr.function.span],
+                        Some(&fn_declr.ident),
+                        fn_declr,
+                        false,
+                    )
+                    .inspect(|trackable| self.track(trackable.clone(), &mut *fn_declr.function));
+
+                    let old_span = self.ignore_span;
+                    self.ignore_span = Some(fn_declr.function.span.clone());
+                    n.visit_mut_children_with(self);
+                    self.ignore_span = old_span
+                }
+
                 self.depth -= 1;
-                self.ignore_span = old_span
             }
             n => {
                 self.depth += 1;
-                n.visit_mut_children_with(self);
+
+                if self.is_top_level_component() {
+                    n.visit_mut_children_with(self);
+                }
+
                 self.depth -= 1;
             }
         }
@@ -449,106 +471,144 @@ where
                 decl: DefaultDecl::Fn(ref mut fn_expr),
             } => {
                 self.depth += 1;
-                if let Some(trackable) = self.should_track_option_ident(
-                    &[&span, &fn_expr.function.span],
-                    fn_expr.ident.as_ref(),
-                    fn_expr,
-                    true,
-                ) {
-                    self.track(trackable, &mut *fn_expr.function);
+
+                if self.is_top_level_component() {
+                    if let Some(trackable) = self.should_track_option_ident(
+                        &[&span, &fn_expr.function.span],
+                        fn_expr.ident.as_ref(),
+                        fn_expr,
+                        true,
+                    ) {
+                        self.track(trackable, &mut *fn_expr.function);
+                    }
+                    let old_span = self.ignore_span;
+                    self.ignore_span = Some(fn_expr.function.span.clone());
+                    n.visit_mut_children_with(self);
+                    self.ignore_span = old_span
                 }
-                let old_span = self.ignore_span;
-                self.ignore_span = Some(fn_expr.function.span.clone());
-                n.visit_mut_children_with(self);
+
                 self.depth -= 1;
-                self.ignore_span = old_span
             }
             n => {
                 self.depth += 1;
-                n.visit_mut_children_with(self);
+                if self.is_top_level_component() {
+                    n.visit_mut_children_with(self);
+                }
                 self.depth -= 1;
             }
         }
     }
+
     fn visit_mut_export_default_expr(&mut self, n: &mut ExportDefaultExpr) {
-        let ExportDefaultExpr { ref mut expr, span } = n;
-        let child_span = expr.unwrap_parens().get_span().clone();
         self.depth += 1;
-        if let Some(mut component) = extract_fn_from_expr(expr.unwrap_parens_mut()) {
-            self.should_track_option_ident(
-                &[&span, &child_span],
-                component.get_fn_ident().as_ref(),
-                &component,
-                true,
-            )
-            .inspect(|trackable| self.track(trackable.clone(), &mut component));
+
+        if self.is_top_level_component() {
+            let ExportDefaultExpr { ref mut expr, span } = n;
+            let child_span = expr.unwrap_parens().get_span().clone();
+
+            if let Some(mut component) = extract_fn_from_expr(expr.unwrap_parens_mut()) {
+                self.should_track_option_ident(
+                    &[&span, &child_span],
+                    component.get_fn_ident().as_ref(),
+                    &component,
+                    true,
+                )
+                .inspect(|trackable| self.track(trackable.clone(), &mut component));
+            }
+
+            n.visit_mut_children_with(self);
+
+            // let old_span = self.ignore_span;
+            // self.ignore_span = Some(child_span);
+            // self.ignore_span = old_span
         }
 
-        n.visit_mut_children_with(self);
         self.depth -= 1;
-        // let old_span = self.ignore_span;
-        // self.ignore_span = Some(child_span);
-        // self.ignore_span = old_span
     }
+
     fn visit_mut_fn_decl(&mut self, n: &mut FnDecl) {
         self.depth += 1;
-        if match self.ignore_span {
-            Some(span) => !span.eq(&n.function.span),
-            None => true,
-        } && let Some(trackable) =
-            self.should_track_option_ident(&[&n.function.span], Some(&n.ident), n, false)
-        {
-            self.track(trackable, &mut *n.function)
+
+        if self.is_top_level_component() {
+            if match self.ignore_span {
+                Some(span) => !span.eq(&n.function.span),
+                None => true,
+            } && let Some(trackable) =
+                self.should_track_option_ident(&[&n.function.span], Some(&n.ident), n, false)
+            {
+                self.track(trackable, &mut *n.function)
+            }
+            n.visit_mut_children_with(self);
         }
-        n.visit_mut_children_with(self);
+
         self.depth -= 1;
     }
 
     fn visit_mut_assign_expr(&mut self, n: &mut AssignExpr) {
-        if let Some(mut component) = extract_fn_from_expr(n.right.borrow_mut())
-            && let Some(trackable) = match component.get_fn_ident() {
-                None => {
-                    self.should_track_option_ident(&[&n.span], Some(&n.left), &component, false)
+        self.depth += 1;
+
+        if self.is_top_level_component() {
+            if let Some(mut component) = extract_fn_from_expr(n.right.borrow_mut())
+                && let Some(trackable) = match component.get_fn_ident() {
+                    None => {
+                        self.should_track_option_ident(&[&n.span], Some(&n.left), &component, false)
+                    }
+                    Some(ident) => {
+                        self.should_track_option_ident(&[&n.span], Some(&ident), &component, false)
+                    }
                 }
-                Some(ident) => {
-                    self.should_track_option_ident(&[&n.span], Some(&ident), &component, false)
-                }
+            {
+                self.track(trackable, &mut component);
             }
-        {
-            self.track(trackable, &mut component);
+
+            n.visit_mut_children_with(self);
         }
 
-        n.visit_mut_children_with(self);
+        self.depth -= 1;
     }
+
     fn visit_mut_key_value_prop(&mut self, n: &mut KeyValueProp) {
-        if let Some(mut component) = extract_fn_from_expr(&mut n.value)
-            && let Some(trackable) = self.should_track_option_ident(
-                &[n.key.get_span()],
-                Some(
-                    &component
-                        .get_fn_ident()
-                        .map_or(n.key.clone(), |it| PropName::Ident(it.into())),
-                ),
-                &component,
-                false,
-            )
-        {
-            self.track(trackable, &mut component);
+        self.depth += 1;
+
+        if self.is_top_level_component() {
+            if let Some(mut component) = extract_fn_from_expr(&mut n.value)
+                && let Some(trackable) = self.should_track_option_ident(
+                    &[n.key.get_span()],
+                    Some(
+                        &component
+                            .get_fn_ident()
+                            .map_or(n.key.clone(), |it| PropName::Ident(it.into())),
+                    ),
+                    &component,
+                    false,
+                )
+            {
+                self.track(trackable, &mut component);
+            }
+
+            n.visit_mut_children_with(self);
         }
 
-        n.visit_mut_children_with(self);
+        self.depth -= 1;
     }
+
     fn visit_mut_method_prop(&mut self, n: &mut MethodProp) {
-        if let Some(trackable) = self.should_track_option_ident(
-            &[&n.function.span, n.key.get_span()],
-            Some(&n.key),
-            n.function.deref(),
-            false,
-        ) {
-            self.track(trackable, &mut *n.function);
+        self.depth += 1;
+
+        if self.is_top_level_component() {
+            if let Some(trackable) = self.should_track_option_ident(
+                &[&n.function.span, n.key.get_span()],
+                Some(&n.key),
+                n.function.deref(),
+                false,
+            ) {
+                self.track(trackable, &mut *n.function);
+            }
+
+            n.visit_mut_children_with(self);
         }
 
-        n.visit_mut_children_with(self);
+        self.depth -= 1;
     }
 
     fn visit_mut_module(&mut self, n: &mut Module) {
@@ -873,14 +933,17 @@ test_inline!(
     nested_components,
     // Input codes
     r#"
-       function Asdjsadf(){
-    function B(){
+    function Asdjsadf() {
+        const outerControl = useControl(false)
+        var someControl = useControl(true)
+        function B() {
+            const control = useControl("")
+            return <div />
+        };
+        function c() {
+            return 5
+        };
         return <div />
-    };
-    function c(){
-        return 5
-    };
-    return <div />
     }
     export default function AnotherComponent(){
     var someValue = useControl("")
@@ -894,21 +957,24 @@ test_inline!(
     r#"
     import { useComponentTracking as _useComponentTracking } from "@react-typed-forms/core";
     function Asdjsadf() {
-    var stop = _useComponentTracking();
-    try {
-        function B() {
+        var stop = _useComponentTracking();
+        try {
+            const outerControl = useControl(false);
+            var someControl = useControl(true)
+            function B() {
+                const control = useControl("");
+                return <div/>;
+            }
+            ;
+            function c() {
+                return 5;
+            }
+            ;
             return <div/>;
+        } finally{
+            stop();
         }
-        ;
-        function c() {
-            return 5;
-        }
-        ;
-        return <div/>;
-    } finally{
-        stop();
     }
-}
 export default function AnotherComponent(){
 var stop = _useComponentTracking();
     try {
