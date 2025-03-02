@@ -3,7 +3,6 @@ use swc_core::{
     common::{sync::Lazy, Mark, Span, SyntaxContext, DUMMY_SP},
     ecma::{
         ast::*,
-        atoms::Atom,
         utils::private_ident,
         visit::{Visit, VisitWith},
     },

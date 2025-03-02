@@ -21,9 +21,8 @@ use swc_core::{
     ecma::{
         ast::*,
         atoms::Atom,
-        parser::Syntax,
         utils::{prepend_stmt, private_ident},
-        visit::{noop_visit_mut_type, FoldWith, VisitMut, VisitMutWith},
+        visit::{noop_visit_mut_type, VisitMut, VisitMutWith},
     },
     plugin::{
         metadata::TransformPluginMetadataContextKind, plugin_transform,
@@ -691,10 +690,10 @@ pub fn process_transform(
 }
 
 #[cfg(test)]
-fn get_syntax() -> Syntax {
-    use swc_core::ecma::parser::EsConfig;
+fn get_syntax() -> swc_core::ecma::parser::Syntax {
+    use swc_core::ecma::parser::{EsSyntax, Syntax};
 
-    let mut a = EsConfig::default();
+    let mut a = EsSyntax::default();
     a.jsx = true;
     Syntax::Es(a)
 }
