@@ -22,10 +22,10 @@ opt-level = 3
 strip = "symbols"
 
 [dependencies]
-regex = "1.11.1"
-serde = "1.0.218"
-serde_json = "1.0.139"
-swc_core = { version = "14.0.0", features = [
+regex = "1.10.2"
+serde = "1.0.193"
+serde_json = "1.0.108"
+swc_core = { version = "5.0.2", features = [
     "ecma_plugin_transform",
     "__parser",
     "__utils",
