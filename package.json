@@ -14,7 +14,7 @@
     "keywords": ["swc-plugin"],
     "main": "swc_controls_plugin.wasm",
     "scripts": {
-        "prepack": "cargo build-wasi --release && cp target/wasm32-wasi/release/swc_controls_plugin.wasm ."
+        "prepack": "cargo build --target wasm32-wasip1 --release && cp target/wasm32-wasip1/release/swc_controls_plugin.wasm ."
     },
     "files": [],
     "preferUnplugged": true

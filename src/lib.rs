@@ -225,7 +225,7 @@ where
     }
 
     fn process_var_decl<T>(&mut self, n: &mut VarDecl, additional_spans: Option<&[&Span]>) {
-        if let Some(first) = n.decls.as_mut_slice().take_first_mut()
+        if let Some(first) = n.decls.as_mut_slice().first_mut()
             && let Some(init) = &mut first.init
             && let child_span = init.unwrap_parens().get_span().clone()
             && let Some(mut component) = extract_fn_from_expr(init.unwrap_parens_mut())
