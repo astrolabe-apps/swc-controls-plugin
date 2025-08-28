@@ -297,23 +297,6 @@ pub fn extract_fn_from_expr<'a>(expr: &'a mut Expr) -> Option<FunctionLike<'a>> 
     match expr {
         Expr::Fn(fn_expr) if fn_expr.is_regular() => Some(FunctionLike::Fn(fn_expr)),
         Expr::Arrow(arrow_expr) if arrow_expr.is_regular() => Some(FunctionLike::Arrow(arrow_expr)),
-        Expr::Call(CallExpr {
-            args,
-            span: _,
-            type_args: _,
-            callee: _,
-            ctxt: _,
-        }) => {
-            if let Some(ExprOrSpread {
-                spread: None,
-                expr: first_arg_expr,
-            }) = args.as_mut_slice().first_mut()
-            {
-                extract_fn_from_expr(first_arg_expr.unwrap_parens_mut())
-            } else {
-                None
-            }
-        }
         _ => None,
     }
 }

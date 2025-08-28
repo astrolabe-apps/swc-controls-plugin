@@ -995,44 +995,33 @@ var stop = _useComponentTracking();
 "#
 );
 
-// test_inline!(
-//     get_syntax(),
-//     |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
-//         tester.comments.clone(),
-//         None
-//     )),
-//     hocs,
-//     // Input codes
-//     r#"
-// const Cec = memo(() => {
-//     return <div />
-// })
-// // hocs should be transformed
-// const Cyc = React.lazy(React.memo(() => {
-//     return <div />
-// }), {})
-// "#,
-//     // Expected codes
-//     r#"
-// import { useSignals as _useSignals } from "@preact-signals/safe-react/tracking";
-// const Cec = memo(()=>{
-//     var _effect = _useSignals();
-//     try {
-//         return <div/>;
-//     } finally{
-//         _effect.f();
-//     }
-// });
-// const Cyc = React.lazy(React.memo(()=>{
-//     var _effect = _useSignals();
-//     try {
-//         return <div/>;
-//     } finally{
-//         _effect.f();
-//     }
-// }), {});
-// "#
-// );
+test_inline!(
+    get_syntax(),
+    |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
+        tester.comments.clone(),
+        None
+    )),
+    hocs,
+    // Input codes
+    r#"
+const Cec = memo(() => {
+    return <div />
+})
+// hocs should be transformed
+const Cyc = React.lazy(React.memo(() => {
+    return <div />
+}), {})
+"#,
+    // Expected codes
+    r#"
+const Cec = memo(()=>{
+    return <div/>;
+});
+const Cyc = React.lazy(React.memo(()=>{
+    return <div/>;
+}), {});
+"#
+);
 //
 // test_inline!(
 //     get_syntax(),
