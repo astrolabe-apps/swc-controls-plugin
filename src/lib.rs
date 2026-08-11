@@ -50,7 +50,7 @@ impl StrExt for Str {
     fn from_str(str: &str) -> Str {
         Str {
             span: DUMMY_SP,
-            value: Atom::new(str),
+            value: Atom::new(str).into(),
             raw: None,
         }
     }
@@ -227,7 +227,7 @@ where
     fn process_var_decl<T>(&mut self, n: &mut VarDecl, additional_spans: Option<&[&Span]>) {
         if let Some(first) = n.decls.as_mut_slice().first_mut()
             && let Some(init) = &mut first.init
-            && let child_span = init.unwrap_parens().get_span().clone()
+            && let child_span = init.unwrap_parens().get_span()
             && let Some(mut component) = extract_fn_from_expr(init.unwrap_parens_mut())
             && let defaults_spans = &[&child_span, &n.span]
             && let spans = if let Some(extra_spans) = additional_spans {
@@ -503,7 +503,7 @@ where
 
         if self.is_top_level_component() {
             let ExportDefaultExpr { ref mut expr, span } = n;
-            let child_span = expr.unwrap_parens().get_span().clone();
+            let child_span = expr.unwrap_parens().get_span();
 
             if let Some(mut component) = extract_fn_from_expr(expr.unwrap_parens_mut()) {
                 self.should_track_option_ident(
@@ -572,7 +572,7 @@ where
         if self.is_top_level_component() {
             if let Some(mut component) = extract_fn_from_expr(&mut n.value)
                 && let Some(trackable) = self.should_track_option_ident(
-                    &[n.key.get_span()],
+                    &[&n.key.get_span()],
                     Some(
                         &component
                             .get_fn_ident()
@@ -596,7 +596,7 @@ where
 
         if self.is_top_level_component() {
             if let Some(trackable) = self.should_track_option_ident(
-                &[&n.function.span, n.key.get_span()],
+                &[&n.function.span, &n.key.get_span()],
                 Some(&n.key),
                 n.function.deref(),
                 false,

@@ -68,7 +68,7 @@ impl MaybeComponentName for str {
 
 impl MaybeComponentName for Str {
     fn is_trackable(&self) -> Option<Trackable> {
-        self.value.as_str().is_trackable()
+        self.value.as_str()?.is_trackable()
     }
 }
 impl MaybeComponentName for Ident {
@@ -106,6 +106,7 @@ impl MaybeComponentName for Pat {
 
 impl MaybeComponentName for MemberProp {
     fn is_trackable(&self) -> Option<Trackable> {
+        #[allow(unreachable_patterns)] // wildcard is only reachable under cfg(swc_ast_unknown)
         match self {
             MemberProp::Ident(ident) => ident.sym.is_trackable(),
             MemberProp::PrivateName(_) => None,
@@ -122,8 +123,9 @@ impl MaybeComponentName for MemberProp {
                     is_component_name(left_str.value.as_str())
                 }  */
 
-                value.as_str().is_trackable()
+                value.as_str()?.is_trackable()
             }
+            _ => None,
         }
     }
 }
@@ -306,6 +308,7 @@ pub trait Blockable {
 }
 impl Blockable for BlockStmtOrExpr {
     fn to_block(&mut self) -> BlockStmt {
+        #[allow(unreachable_patterns)] // wildcard is only reachable under cfg(swc_ast_unknown)
         match self {
             BlockStmtOrExpr::BlockStmt(block) => block.to_owned(),
             BlockStmtOrExpr::Expr(expr) => BlockStmt {
@@ -316,6 +319,7 @@ impl Blockable for BlockStmtOrExpr {
                     arg: Some(expr.clone()),
                 })],
             },
+            _ => panic!("unknown BlockStmtOrExpr variant (AST node newer than this plugin)"),
         }
     }
 }
@@ -349,7 +353,7 @@ impl Visit for HasDotValue {
                     raw: _,
                 })) = expr.unwrap_parens()
                 {
-                    value.as_str() == "value"
+                    value.as_str() == Some("value")
                 } else {
                     false
                 }
@@ -506,76 +510,17 @@ pub fn add_require(
     })))
 }
 
+// swc_core's own `Spanned` trait covers every AST node (including the
+// cfg(swc_ast_unknown) `Unknown` variants), exposed here under the old name.
 pub trait Spanned {
-    fn get_span(&self) -> &Span;
+    fn get_span(&self) -> Span;
 }
 
-impl Spanned for Lit {
-    fn get_span(&self) -> &Span {
-        match self {
-            Lit::Bool(lit) => &lit.span,
-            Lit::Num(lit) => &lit.span,
-            Lit::Str(lit) => &lit.span,
-            Lit::BigInt(lit) => &lit.span,
-            Lit::Null(lit) => &lit.span,
-            Lit::Regex(lit) => &lit.span,
-            Lit::JSXText(lit) => &lit.span,
-        }
-    }
-}
-impl Spanned for PropName {
-    fn get_span(&self) -> &Span {
-        match self {
-            PropName::BigInt(it) => &it.span,
-            PropName::Computed(it) => &it.span,
-            PropName::Ident(it) => &it.span,
-            PropName::Num(it) => &it.span,
-            PropName::Str(it) => &it.span,
-        }
-    }
-}
-
-impl Spanned for Expr {
-    fn get_span(&self) -> &Span {
-        match self {
-            Expr::Array(lit) => &lit.span,
-            Expr::Arrow(lit) => &lit.span,
-            Expr::Assign(lit) => &lit.span,
-            Expr::Await(lit) => &lit.span,
-            Expr::Bin(lit) => &lit.span,
-            Expr::Call(lit) => &lit.span,
-            Expr::Class(lit) => &lit.class.span,
-            Expr::Cond(lit) => &lit.span,
-            Expr::Fn(lit) => &lit.function.span,
-            Expr::Ident(lit) => &lit.span,
-            Expr::Lit(lit) => lit.get_span(),
-            Expr::Member(lit) => &lit.span,
-            Expr::MetaProp(lit) => &lit.span,
-            Expr::New(lit) => &lit.span,
-            Expr::Object(lit) => &lit.span,
-            Expr::Paren(lit) => &lit.span,
-            Expr::PrivateName(lit) => &lit.span,
-            Expr::Seq(lit) => &lit.span,
-            Expr::TaggedTpl(lit) => &lit.span,
-            Expr::This(lit) => &lit.span,
-            Expr::Tpl(lit) => &lit.span,
-            Expr::Unary(lit) => &lit.span,
-            Expr::Update(lit) => &lit.span,
-            Expr::Yield(lit) => &lit.span,
-            Expr::JSXMember(lit) => &lit.prop.span,
-            Expr::JSXNamespacedName(lit) => &lit.ns.span,
-            Expr::JSXEmpty(lit) => &lit.span,
-            Expr::JSXElement(lit) => &lit.span,
-            Expr::JSXFragment(lit) => &lit.span,
-            Expr::TsTypeAssertion(lit) => &lit.span,
-            Expr::TsConstAssertion(lit) => &lit.span,
-            Expr::TsNonNull(lit) => &lit.span,
-            Expr::TsAs(lit) => &lit.span,
-            Expr::TsInstantiation(lit) => &lit.span,
-            Expr::TsSatisfies(lit) => &lit.span,
-            Expr::Invalid(it) => &it.span,
-            Expr::SuperProp(it) => &it.span,
-            Expr::OptChain(it) => &it.span,
-        }
+impl<T> Spanned for T
+where
+    T: swc_core::common::Spanned,
+{
+    fn get_span(&self) -> Span {
+        self.span()
     }
 }

@@ -1,0 +1,4 @@
+# Required for the stable Wasm plugin ABI (@swc/core >= 1.15.0 / next >= 16.1):
+# https://swc.rs/docs/plugin/ecmascript/compatibility
+[target.'cfg(target_arch = "wasm32")']
+rustflags = ["--cfg=swc_ast_unknown"]
