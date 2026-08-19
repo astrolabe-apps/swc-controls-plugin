@@ -1,8 +1,7 @@
 mod utils;
-use swc_core::{
-    common::{Mark, SyntaxContext},
-    ecma::visit::{fold_pass, visit_mut_pass, FoldPass},
-};
+use swc_core::common::SyntaxContext;
+#[cfg(test)]
+use swc_core::ecma::visit::visit_mut_pass;
 use utils::*;
 
 use std::{
@@ -42,7 +41,6 @@ fn is_no_track_signals_directive(string: &str) -> bool {
 
 trait StrExt {
     fn from_str(str: &str) -> Str;
-    fn signals_default_source() -> Str;
 }
 impl StrExt for Str {
     fn from_str(str: &str) -> Str {
@@ -51,9 +49,6 @@ impl StrExt for Str {
             value: Atom::new(str).into(),
             raw: None,
         }
-    }
-    fn signals_default_source() -> Str {
-        Str::from_str("@react-typed-forms/core")
     }
 }
 trait IdentExt {
@@ -101,10 +96,6 @@ mod options {
     fn default_import_source() -> String {
         "@react-typed-forms/core".into()
     }
-    fn default_transform_hooks() -> bool {
-        true
-    }
-
     #[derive(Deserialize)]
     #[serde(rename_all = "camelCase")]
     pub struct PreactSignalsPluginOptions {
@@ -112,8 +103,6 @@ mod options {
         pub mode: TransformMode,
         #[serde(default = "default_import_source")]
         pub import_source: String,
-        #[serde(default = "default_transform_hooks")]
-        pub transform_hooks: bool,
         #[serde(default)]
         pub experimental: PreactSignalsPluginExperimental,
     }
@@ -123,39 +112,7 @@ mod options {
             PreactSignalsPluginOptions {
                 mode: TransformMode::default(),
                 import_source: default_import_source(),
-                transform_hooks: default_transform_hooks(),
                 experimental: PreactSignalsPluginExperimental::default(),
-            }
-        }
-    }
-    impl PreactSignalsPluginOptions {
-        pub fn auto_hooks() -> PreactSignalsPluginOptions {
-            PreactSignalsPluginOptions {
-                mode: TransformMode::Auto,
-                import_source: default_import_source(),
-                transform_hooks: true,
-                experimental: PreactSignalsPluginExperimental::default(),
-            }
-        }
-        pub fn auto_hooks_and_hook_usage_flag() -> PreactSignalsPluginOptions {
-            PreactSignalsPluginOptions {
-                mode: TransformMode::Auto,
-                import_source: default_import_source(),
-                transform_hooks: true,
-                experimental: PreactSignalsPluginExperimental {
-                    add_hook_usage_flag: true,
-                },
-            }
-        }
-
-        pub fn auto_hooks_context_flags() -> PreactSignalsPluginOptions {
-            PreactSignalsPluginOptions {
-                mode: TransformMode::Auto,
-                import_source: default_import_source(),
-                transform_hooks: true,
-                experimental: PreactSignalsPluginExperimental {
-                    add_hook_usage_flag: true,
-                },
             }
         }
     }
@@ -172,7 +129,6 @@ where
     use_signals_import_source: Str,
     ignore_span: Option<Span>,
     file_trackable_name: Option<Trackable>,
-    transform_hooks: bool,
     add_context_to_hooks: bool,
     depth: u32, // unresolved_mark: Mark,
 }
@@ -201,7 +157,6 @@ where
             mode: options.mode,
             import_use_signals: None,
             use_signals_import_source: Str::from_str(options.import_source.as_str()),
-            transform_hooks: options.transform_hooks,
             ignore_span: None,
             add_context_to_hooks: options.experimental.add_hook_usage_flag,
             depth: 0,
@@ -222,7 +177,7 @@ where
         )
     }
 
-    fn process_var_decl<T>(&mut self, n: &mut VarDecl, additional_spans: Option<&[&Span]>) {
+    fn process_var_decl(&mut self, n: &mut VarDecl, additional_spans: Option<&[&Span]>) {
         if let Some(first) = n.decls.as_mut_slice().first_mut()
             && let Some(init) = &mut first.init
             && let child_span = init.unwrap_parens().get_span()
@@ -398,7 +353,7 @@ where
                 .unwrap_or(true);
 
             if should_process {
-                self.process_var_decl::<SignalsTransformVisitor<C>>(n, None)
+                self.process_var_decl(n, None)
             }
 
             n.visit_mut_children_with(self);
@@ -415,10 +370,7 @@ where
                 self.depth += 1;
 
                 if self.is_top_level_component() {
-                    self.process_var_decl::<SignalsTransformVisitor<C>>(
-                        var_decl.deref_mut(),
-                        Some(&[&span]),
-                    );
+                    self.process_var_decl(var_decl.deref_mut(), Some(&[&span]));
                     let old_span = self.ignore_span;
                     self.ignore_span = Some(var_decl.span.clone());
                     n.visit_mut_children_with(self);

@@ -200,7 +200,7 @@ pub fn wrap_with_use_signals(
         type_args: None,
     });
     if !wrap_in_try_finally {
-        let mut res = Vec::with_capacity(n.capacity() + 1);
+        let mut res = Vec::with_capacity(n.len() + 1);
         res.push(Stmt::Expr(ExprStmt {
             span: DUMMY_SP,
             expr: Box::new(hook_call),
@@ -335,38 +335,6 @@ impl Visit for HasJSX {
     }
 }
 
-struct HasDotValue {
-    found: bool,
-}
-impl Visit for HasDotValue {
-    fn visit_member_expr(&mut self, n: &MemberExpr) {
-        if self.found {
-            return;
-        }
-
-        if match &n.prop {
-            MemberProp::Ident(ident) => ident.sym.as_str() == "value",
-            MemberProp::Computed(ComputedPropName { span: _, expr }) => {
-                if let Expr::Lit(Lit::Str(Str {
-                    span: _,
-                    value,
-                    raw: _,
-                })) = expr.unwrap_parens()
-                {
-                    value.as_str() == Some("value")
-                } else {
-                    false
-                }
-            }
-            _ => false,
-        } {
-            self.found = true;
-            return;
-        }
-        n.visit_children_with(self);
-    }
-}
-
 fn has_jsx<N>(n: &N) -> bool
 where
     N: VisitWith<HasJSX>,
@@ -375,18 +343,9 @@ where
     n.visit_children_with(&mut v);
     v.found
 }
-fn has_dot_value<N>(n: &N) -> bool
-where
-    N: VisitWith<HasDotValue>,
-{
-    let mut v = HasDotValue { found: false };
-    n.visit_children_with(&mut v);
-    v.found
-}
 
 pub trait Detectable {
     fn has_jsx(&self) -> bool;
-    fn has_dot_value(&self) -> bool;
 }
 
 impl Detectable for FunctionLike<'_> {
@@ -396,35 +355,20 @@ impl Detectable for FunctionLike<'_> {
             FunctionLike::Fn(fn_expr) => has_jsx(*fn_expr),
         }
     }
-    fn has_dot_value(&self) -> bool {
-        match self {
-            FunctionLike::Arrow(arrow_expr) => has_dot_value(*arrow_expr),
-            FunctionLike::Fn(fn_expr) => has_dot_value(*fn_expr),
-        }
-    }
 }
 impl Detectable for FnDecl {
     fn has_jsx(&self) -> bool {
         has_jsx(&self.function)
-    }
-    fn has_dot_value(&self) -> bool {
-        has_dot_value(&self.function)
     }
 }
 impl Detectable for FnExpr {
     fn has_jsx(&self) -> bool {
         has_jsx(&self.function)
     }
-    fn has_dot_value(&self) -> bool {
-        has_dot_value(&self.function)
-    }
 }
 impl Detectable for Function {
     fn has_jsx(&self) -> bool {
         has_jsx(self)
-    }
-    fn has_dot_value(&self) -> bool {
-        has_dot_value(self)
     }
 }
 
