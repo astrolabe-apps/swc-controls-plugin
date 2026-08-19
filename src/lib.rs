@@ -1,5 +1,3 @@
-#![feature(box_patterns, let_chains, if_let_guard, slice_take)]
-
 mod utils;
 use swc_core::{
     common::{Mark, SyntaxContext},
@@ -412,7 +410,7 @@ where
         match n {
             ExportDecl {
                 span,
-                decl: Decl::Var(ref mut var_decl),
+                decl: Decl::Var(var_decl),
             } => {
                 self.depth += 1;
 
@@ -431,7 +429,7 @@ where
             }
             ExportDecl {
                 span,
-                decl: Decl::Fn(ref mut fn_declr),
+                decl: Decl::Fn(fn_declr),
             } => {
                 self.depth += 1;
 
@@ -467,7 +465,7 @@ where
         match n {
             ExportDefaultDecl {
                 span,
-                decl: DefaultDecl::Fn(ref mut fn_expr),
+                decl: DefaultDecl::Fn(fn_expr),
             } => {
                 self.depth += 1;
 
@@ -502,7 +500,7 @@ where
         self.depth += 1;
 
         if self.is_top_level_component() {
-            let ExportDefaultExpr { ref mut expr, span } = n;
+            let ExportDefaultExpr { expr, span } = n;
             let child_span = expr.unwrap_parens().get_span();
 
             if let Some(mut component) = extract_fn_from_expr(expr.unwrap_parens_mut()) {
