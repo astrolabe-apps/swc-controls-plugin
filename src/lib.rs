@@ -669,210 +669,6 @@ macro_rules! test_inline {
     };
 }
 
-// test_inline!(
-//     get_syntax(),
-//     |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
-//         tester.comments.clone(),
-//         None
-//     )),
-//     arrow_fn,
-//     // Input codes
-//     r#"
-// const A = () => {
-//     return <div />
-// }
-// const Cecek = () => <div />
-// "#,
-//     // Expected codes
-//     r#"
-// import { useSignals as _useSignals } from "@preact-signals/safe-react/tracking";
-// const A = ()=>{
-//     var _effect = _useSignals();
-//     try {
-//         return <div/>;
-//     } finally{
-//         _effect.f();
-//     }
-// };
-// const Cecek = ()=>{
-//     var _effect = _useSignals();
-//     try {
-//         return <div/>;
-//     } finally{
-//         _effect.f();
-//     }
-// };
-// "#
-// );
-//
-// test_inline!(
-//     get_syntax(),
-//     |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
-//         tester.comments.clone(),
-//         None
-//     )),
-//     function,
-//     // Input codes
-//     r#"
-// // should be transformed
-// function A(){
-//     return <div />
-// }
-// "#,
-//     // Expected codes
-//     r#"
-// import { useSignals as _useSignals } from "@preact-signals/safe-react/tracking";
-// function A() {
-//     var _effect = _useSignals();
-//     try {
-//         return <div/>;
-//     } finally{
-//         _effect.f();
-//     }
-// }
-// "#
-// );
-//
-// test_inline!(
-//     get_syntax(),
-//     |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
-//         tester.comments.clone(),
-//         None
-//     )),
-//     function_expr,
-//     // Input codes
-//     r#"
-// var C = function(){
-//     return <div />
-// };
-// var C2 = function C3(){
-//     return <div />
-// };
-// "#,
-//     // Expected codes
-//     r#"
-// import { useSignals as _useSignals } from "@preact-signals/safe-react/tracking";
-// var C = function() {
-//     var _effect = _useSignals();
-//     try {
-//         return <div/>;
-//     } finally{
-//         _effect.f();
-//     }
-// };
-// var C2 = function C3() {
-//     var _effect = _useSignals();
-//     try {
-//         return <div/>;
-//     } finally{
-//         _effect.f();
-//     }
-// };
-// "#
-// );
-//
-// test_inline!(
-//     get_syntax(),
-//     |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
-//         tester.comments.clone(),
-//         None
-//     )),
-//     opt_in,
-//     // Input codes
-//     r#"
-// /**
-//  * @useSignals
-//  */
-// function a(){
-//     return 10;
-// }
-//
-// /**
-//  * @useSignals
-//  */
-// const b = () => {
-//     return 10;
-// }
-//
-// /**
-//  * @useSignals
-//  */
-// const c = function(){
-//     return 10
-// };
-// /**
-//  * @useSignals
-//  */
-// const d = () => 10
-//
-// /**
-//  * @useSignals
-//  */
-// export function boba(){
-//     return 10
-// }
-//
-// /**
-//  * @useSignals
-//  */
-// export const boba2 = () => 10
-// "#,
-//     // Expected codes
-//     r#"
-// import { useSignals as _useSignals } from "@preact-signals/safe-react/tracking";
-//
-// function a() {
-//     var _effect = _useSignals();
-//     try {
-//         return 10;
-//     } finally{
-//         _effect.f();
-//     }
-// }
-// const b = ()=>{
-//     var _effect = _useSignals();
-//     try {
-//         return 10;
-//     } finally{
-//         _effect.f();
-//     }
-// };
-// const c = function() {
-//     var _effect = _useSignals();
-//     try {
-//         return 10;
-//     } finally{
-//         _effect.f();
-//     }
-// };
-// const d = ()=>{
-//     var _effect = _useSignals();
-//     try {
-//         return 10;
-//     } finally{
-//         _effect.f();
-//     }
-// };
-//
-// export function boba() {
-//     var _effect = _useSignals();
-//     try {
-//         return 10;
-//     } finally{
-//         _effect.f();
-//     }
-// }
-// export const boba2 = ()=>{
-//     var _effect = _useSignals();
-//     try {
-//         return 10;
-//     } finally{
-//         _effect.f();
-//     }
-// };
-// "#
-// );
-//
 test_inline!(
     get_syntax(),
     |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
@@ -972,320 +768,462 @@ const Cyc = React.lazy(React.memo(()=>{
 }), {});
 "#
 );
-//
-// test_inline!(
-//     get_syntax(),
-//     |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
-//         tester.comments.clone(),
-//         None
-//     )),
-//     opt_in_opt_out,
-//     // Input codes
-//     r#"
-// /**
-//  * @noUseSignals
-//  * @useSignals
-//  */
-// function MyComponent() {
-//     return <div>{signal.value}</div>;
-// }
-// "#,
-//     // Expected codes
-//     r#"
-// /**
-//  * @noUseSignals
-//  * @useSignals
-//  */
-// function MyComponent() {
-//     return <div>{signal.value}</div>;
-// }
-// "#
-// );
-//
-// // An example to test plugin transform.
-// // Recommended strategy to test plugin's transform is verify
-// // the Visitor's behavior, instead of trying to run `process_transform` with mocks
-// // unless explicitly required to do so.
-// test_inline!(
-//     get_syntax(),
-//     |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
-//         tester.comments.clone(),
-//         None
-//     )),
-//     rare_components,
-//     // Input codes
-//     r#"
-// let Jopa;
-// Jopa = () => <>{a.value}</>
-// Jopa = function(){
-//     return <>{a.value}</>
-// }
-// const A = {
-//     Beb(){
-//         return <>10</>
-//     }
-// }
-//
-// A.bebe.Baba = () => <div>{a.value}</div>
-//
-// const Beb = {
-//     A: () => <div />
-// }
-//
-// const _ = {
-//     ['Aboba']() {
-//         return <div />
-//     }
-// }
-//     "#,
-//     // Expected codes
-//     r#"
-// import { useSignals as _useSignals } from "@preact-signals/safe-react/tracking";
-//
-// let Jopa;
-// Jopa = ()=>{
-//     var _effect = _useSignals();
-//     try {
-//         return <>{a.value}</>;
-//     } finally{
-//         _effect.f();
-//     }
-// };
-// Jopa = function() {
-//     var _effect = _useSignals();
-//     try {
-//         return <>{a.value}</>;
-//     } finally{
-//         _effect.f();
-//     }
-// };
-// const A = {
-//     Beb() {
-//         var _effect = _useSignals();
-//         try {
-//             return <>10</>;
-//         } finally{
-//             _effect.f();
-//         }
-//     }
-// };
-// A.bebe.Baba = ()=>{
-//     var _effect = _useSignals();
-//     try {
-//         return <div>{a.value}</div>;
-//     } finally{
-//         _effect.f();
-//     }
-// };
-// const Beb = {
-//     A: ()=>{
-//         var _effect = _useSignals();
-//         try {
-//             return <div/>;
-//         } finally{
-//             _effect.f();
-//         }
-//     }
-// };
-//
-// const _ = {
-//     ['Aboba']() {
-//         var _effect = _useSignals();
-//         try {
-//             return <div/>;
-//         } finally{
-//             _effect.f();
-//         }
-//     }
-// }
-// "#
-// );
-//
-// test_inline!(
-//     get_syntax(),
-//     |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
-//         tester.comments.clone(),
-//         Some(Trackable::Component)
-//     )),
-//     default_components,
-//     // Input codes
-//     r#"
-// export default function(){
-//     return <div />
-// }
-// export default (() => {
-//     return <div />
-// })
-// "#,
-//     // Expected codes
-//     r#"
-// import { useSignals as _useSignals } from "@preact-signals/safe-react/tracking";
-// export default function() {
-//     var _effect = _useSignals();
-//     try {
-//         return <div/>;
-//     } finally{
-//         _effect.f();
-//     }
-// }
-//
-// export default (()=>{
-//     var _effect = _useSignals();
-//     try {
-//         return <div/>;
-//     } finally{
-//         _effect.f();
-//     }
-// });
-// "#
-// );
-//
-// test_inline!(
-//     get_syntax(),
-//     |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
-//         tester.comments.clone(),
-//         None
-//     )),
-//     import_goes_after_directives,
-//     // Input codes
-//     r#"
-// 'use strict';
-//
-// const Bebe = () => <div>{a.value}</div>
-// "#,
-//     // Expected codes
-//     r#"
-// 'use strict';
-//
-// import { useSignals as _useSignals } from "@preact-signals/safe-react/tracking";
-// const Bebe = ()=>{
-//     var _effect = _useSignals();
-//     try {
-//         return <div>{a.value}</div>;
-//     } finally{
-//         _effect.f();
-//     }
-// }
-// "#
-// );
-//
-// test_inline!(
-//     get_syntax(),
-//     |tester| visit_mut_pass(SignalsTransformVisitor::from_options(
-//         PreactSignalsPluginOptions::auto_hooks(),
-//         tester.comments.clone(),
-//         None
-//     )),
-//     hooks_code_is_transformed,
-//     // Input codes
-//     r#"
-// 'use strict';
-//
-// const useAboba = () => a.value
-// "#,
-//     // Expected codes
-//     r#"
-// 'use strict';
-//
-// import { useSignals as _useSignals } from "@preact-signals/safe-react/tracking";
-//
-// const useAboba = () => {
-//   var _effect = _useSignals();
-//   try {
-//     return a.value
-//   } finally{
-//    _effect.f()
-//   }
-// "#
-// );
-//
-// test_inline!(
-//     get_syntax(),
-//     |tester| visit_mut_pass(SignalsTransformVisitor::from_options(
-//         PreactSignalsPluginOptions::auto_hooks(),
-//         tester.comments.clone(),
-//         None
-//     )),
-//     hook_code_auto,
-//     r#"
-// 'use strict';
-//
-// const useAboba = () => {
-//   const counter = useSignal(0)
-//   console.log(counter.value)
-// }
-// "#,
-//     r#"
-// 'use strict';
-//
-// import { useSignals as _useSignals } from "@preact-signals/safe-react/tracking";
-//
-// const useAboba = () => {
-//   var _effect = _useSignals();
-//   try {
-//     const counter = useSignal(0)
-//     console.log(counter.value)
-//   } finally{
-//    _effect.f()
-//   }
-// }
-// "#
-// );
-//
-// test_inline!(
-//     get_syntax(),
-//     |tester| visit_mut_pass(SignalsTransformVisitor::from_options(
-//         PreactSignalsPluginOptions::auto_hooks_and_hook_usage_flag(),
-//         tester.comments.clone(),
-//         None
-//     )),
-//     hook_code_auto_with_ctx,
-//     r#"
-// 'use strict';
-//
-// const useAboba = () => {
-//   const counter = useSignal(0)
-//   console.log(counter.value)
-// }
-//
-// // [TODO]: fix inline comments
-// /**
-//  * @useSignals
-//  */
-// const unknown = () => undefined
-//
-// const Component = () => {
-//     a.value
-//     return <></>
-// }
-// "#,
-//     r#"
-// 'use strict';
-//
-// import { useSignals as _useSignals } from "@preact-signals/safe-react/tracking";
-//
-// const useAboba = () => {
-//   var _effect = _useSignals(2);
-//   try {
-//     const counter = useSignal(0)
-//     console.log(counter.value)
-//   } finally{
-//    _effect.f()
-//   }
-// }
-// const unknown = ()=>{
-//     _useSignals();
-//     return undefined;
-// };
-//
-// const Component = ()=>{
-//     var _effect = _useSignals(1);
-//     try {
-//         a.value;
-//         return <></>;
-//      } finally{
-//          _effect.f();
-//      }
-//  };
-// "#
-// );
+
+test_inline!(
+    get_syntax(),
+    |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
+        tester.comments.clone(),
+        None
+    )),
+    arrow_fn,
+    // Input codes
+    r#"
+const A = () => {
+    return <div />
+}
+const Cecek = () => <div />
+"#,
+    // Expected codes
+    r#"
+import { useComponentTracking as _useComponentTracking } from "@react-typed-forms/core";
+const A = ()=>{
+    var stop = _useComponentTracking();
+    try {
+        return <div/>;
+    } finally{
+        stop();
+    }
+};
+const Cecek = ()=>{
+    var stop = _useComponentTracking();
+    try {
+        return <div/>;
+    } finally{
+        stop();
+    }
+};
+"#
+);
+
+test_inline!(
+    get_syntax(),
+    |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
+        tester.comments.clone(),
+        None
+    )),
+    function,
+    // Input codes
+    r#"
+// should be transformed
+function A(){
+    return <div />
+}
+"#,
+    // Expected codes
+    r#"
+import { useComponentTracking as _useComponentTracking } from "@react-typed-forms/core";
+function A() {
+    var stop = _useComponentTracking();
+    try {
+        return <div/>;
+    } finally{
+        stop();
+    }
+}
+"#
+);
+
+test_inline!(
+    get_syntax(),
+    |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
+        tester.comments.clone(),
+        None
+    )),
+    function_expr,
+    // Input codes
+    r#"
+var C = function(){
+    return <div />
+};
+var C2 = function C3(){
+    return <div />
+};
+"#,
+    // Expected codes
+    r#"
+import { useComponentTracking as _useComponentTracking } from "@react-typed-forms/core";
+var C = function() {
+    var stop = _useComponentTracking();
+    try {
+        return <div/>;
+    } finally{
+        stop();
+    }
+};
+var C2 = function C3() {
+    var stop = _useComponentTracking();
+    try {
+        return <div/>;
+    } finally{
+        stop();
+    }
+};
+"#
+);
+
+test_inline!(
+    get_syntax(),
+    |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
+        tester.comments.clone(),
+        None
+    )),
+    opt_in,
+    // Input codes
+    r#"
+/**
+ * @trackControls
+ */
+function a(){
+    return 10;
+}
+
+/**
+ * @trackControls
+ */
+const b = () => {
+    return 10;
+}
+
+/**
+ * @trackControls
+ */
+const c = function(){
+    return 10
+};
+/**
+ * @trackControls
+ */
+const d = () => 10
+
+/**
+ * @trackControls
+ */
+export function boba(){
+    return 10
+}
+
+/**
+ * @trackControls
+ */
+export const boba2 = () => 10
+"#,
+    // Expected codes
+    r#"
+import { useComponentTracking as _useComponentTracking } from "@react-typed-forms/core";
+function a() {
+    var stop = _useComponentTracking();
+    try {
+        return 10;
+    } finally{
+        stop();
+    }
+}
+const b = ()=>{
+    var stop = _useComponentTracking();
+    try {
+        return 10;
+    } finally{
+        stop();
+    }
+};
+const c = function() {
+    var stop = _useComponentTracking();
+    try {
+        return 10;
+    } finally{
+        stop();
+    }
+};
+const d = ()=>{
+    var stop = _useComponentTracking();
+    try {
+        return 10;
+    } finally{
+        stop();
+    }
+};
+
+export function boba() {
+    var stop = _useComponentTracking();
+    try {
+        return 10;
+    } finally{
+        stop();
+    }
+}
+export const boba2 = ()=>{
+    var stop = _useComponentTracking();
+    try {
+        return 10;
+    } finally{
+        stop();
+    }
+};
+"#
+);
+
+test_inline!(
+    get_syntax(),
+    |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
+        tester.comments.clone(),
+        None
+    )),
+    opt_in_opt_out,
+    // Input codes
+    r#"
+/**
+ * @noTrackControls
+ * @trackControls
+ */
+function MyComponent() {
+    return <div>{signal.value}</div>;
+}
+"#,
+    // Expected codes
+    r#"
+function MyComponent() {
+    return <div>{signal.value}</div>;
+}
+"#
+);
+
+test_inline!(
+    get_syntax(),
+    |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
+        tester.comments.clone(),
+        None
+    )),
+    rare_components,
+    // Note: components in object literals (methods, properties, computed
+    // keys) are NOT wrapped — only plain assignment expressions are.
+    // Input codes
+    r#"
+let Jopa;
+Jopa = () => <>{a.value}</>
+Jopa = function(){
+    return <>{a.value}</>
+}
+const A = {
+    Beb(){
+        return <>10</>
+    }
+}
+
+A.bebe.Baba = () => <div>{a.value}</div>
+
+const Beb = {
+    A: () => <div />
+}
+
+const _ = {
+    ['Aboba']() {
+        return <div />
+    }
+}
+    "#,
+    // Expected codes
+    r#"
+import { useComponentTracking as _useComponentTracking } from "@react-typed-forms/core";
+
+let Jopa;
+Jopa = ()=>{
+    var stop = _useComponentTracking();
+    try {
+        return <>{a.value}</>;
+    } finally{
+        stop();
+    }
+};
+Jopa = function() {
+    var stop = _useComponentTracking();
+    try {
+        return <>{a.value}</>;
+    } finally{
+        stop();
+    }
+};
+const A = {
+    Beb() {
+        return <>10</>;
+    }
+};
+A.bebe.Baba = ()=>{
+    var stop = _useComponentTracking();
+    try {
+        return <div>{a.value}</div>;
+    } finally{
+        stop();
+    }
+};
+const Beb = {
+    A: ()=><div/>
+};
+
+const _ = {
+    ['Aboba']() {
+        return <div/>;
+    }
+}
+"#
+);
+
+test_inline!(
+    get_syntax(),
+    |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
+        tester.comments.clone(),
+        Some(Trackable::Component)
+    )),
+    default_components,
+    // Input codes
+    r#"
+export default function(){
+    return <div />
+}
+export default (() => {
+    return <div />
+})
+"#,
+    // Expected codes
+    r#"
+import { useComponentTracking as _useComponentTracking } from "@react-typed-forms/core";
+export default function() {
+    var stop = _useComponentTracking();
+    try {
+        return <div/>;
+    } finally{
+        stop();
+    }
+}
+
+export default (()=>{
+    var stop = _useComponentTracking();
+    try {
+        return <div/>;
+    } finally{
+        stop();
+    }
+});
+"#
+);
+
+test_inline!(
+    get_syntax(),
+    |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
+        tester.comments.clone(),
+        None
+    )),
+    import_goes_after_directives,
+    // Input codes
+    r#"
+'use strict';
+
+const Bebe = () => <div>{a.value}</div>
+"#,
+    // Expected codes
+    r#"
+'use strict';
+
+import { useComponentTracking as _useComponentTracking } from "@react-typed-forms/core";
+const Bebe = ()=>{
+    var stop = _useComponentTracking();
+    try {
+        return <div>{a.value}</div>;
+    } finally{
+        stop();
+    }
+}
+"#
+);
+
+// Hooks are intentionally NOT transformed (the old transformHooks behavior
+// was removed) — even when they read control values.
+test_inline!(
+    get_syntax(),
+    |tester| visit_mut_pass(SignalsTransformVisitor::from_default(
+        tester.comments.clone(),
+        None
+    )),
+    hooks_are_not_transformed,
+    // Input codes
+    r#"
+const useAboba = () => a.value
+function useBeb() {
+    const counter = useControl(0);
+    return counter;
+}
+"#,
+    // Expected codes
+    r#"
+const useAboba = () => a.value
+function useBeb() {
+    const counter = useControl(0);
+    return counter;
+}
+"#
+);
+
+// experimental.addHookUsageFlag passes the trackable kind as an argument:
+// component -> 1, hook (opt-in only) -> 2, unknown opt-in -> bare call
+// without try/finally.
+test_inline!(
+    get_syntax(),
+    |tester| visit_mut_pass(SignalsTransformVisitor::from_options(
+        serde_json::from_str::<PreactSignalsPluginOptions>(
+            r#"{"experimental":{"addHookUsageFlag":true}}"#
+        )
+        .unwrap(),
+        tester.comments.clone(),
+        None
+    )),
+    hook_usage_flag,
+    // Input codes
+    r#"
+/**
+ * @trackControls
+ */
+const useAboba = () => {
+    return a.b;
+}
+/**
+ * @trackControls
+ */
+const unknown = () => undefined
+const Component = () => {
+    return <></>
+}
+"#,
+    // Expected codes
+    r#"
+import { useComponentTracking as _useComponentTracking } from "@react-typed-forms/core";
+const useAboba = ()=>{
+    var stop = _useComponentTracking(2);
+    try {
+        return a.b;
+    } finally{
+        stop();
+    }
+};
+const unknown = ()=>{
+    _useComponentTracking();
+    return undefined;
+};
+const Component = ()=>{
+    var stop = _useComponentTracking(1);
+    try {
+        return <></>;
+    } finally{
+        stop();
+    }
+};
+"#
+);
